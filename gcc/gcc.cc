@@ -443,6 +443,7 @@ static const char *greater_than_spec_func (int, const char **);
 static const char *debug_level_greater_than_spec_func (int, const char **);
 static const char *dwarf_version_greater_than_spec_func (int, const char **);
 static const char *find_fortran_preinclude_file (int, const char **);
+static const char *join_spec_func (int, const char **);
 static char *convert_white_space (char *);
 static char *quote_spec (char *);
 static char *quote_spec_arg (char *);
@@ -1231,7 +1232,9 @@ static const char *cpp_unique_options =
  %{remap} %{%:debug-level-gt(2):-dD}\
  %{!iplugindir*:%{fplugin*:%:find-plugindir()}}\
  %{H} %C %{D*&U*&A*} %{i*} %Z %i\
- %{E|M|MM:%W{o*}}";
+ %{E|M|MM:%W{o*}}\
+ %{fdeps-format=*:%{!fdeps-file=*:-fdeps-file=%:join(%{!o:%b.ddi}%{o*:%.ddi%*})}}\
+ %{fdeps-format=*:%{!fdeps-target=*:-fdeps-target=%:join(%{!o:%b.o}%{o*:%.o%*})}}";
 
 /* This contains cpp options which are common with cc1_options and are passed
    only when preprocessing only to avoid duplication.  We pass the cc1 spec
@@ -1768,6 +1771,7 @@ static const struct spec_function static_spec_functions[] =
   { "debug-level-gt",		debug_level_greater_than_spec_func },
   { "dwarf-version-gt",		dwarf_version_greater_than_spec_func },
   { "fortran-preinclude-file",	find_fortran_preinclude_file},
+  { "join",			join_spec_func},
 #ifdef EXTRA_SPEC_FUNCTIONS
   EXTRA_SPEC_FUNCTIONS
 #endif
@@ -10906,6 +10910,19 @@ find_fortran_preinclude_file (int argc, const char **argv)
     }
 
   path_prefix_reset (&prefixes);
+  return result;
+}
+
+/* The function takes any number of arguments and joins them together.  */
+
+static const char *
+join_spec_func (int argc, const char **argv)
+{
+  char *result = NULL;
+
+  for (int i = 0; i < argc; ++i)
+    result = reconcat(result, result ? result : "", argv[i], NULL);
+
   return result;
 }
 
